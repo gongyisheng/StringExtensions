@@ -12,11 +12,11 @@ static kmp_next *createNext(int *next){
 }
 
 // get next array
-static kmp_next *getNext(const std::string &pattern) {
+static kmp_next *getNext(const char *pattern) {
     int i = 0, j = -1;
-    int *next = new int[pattern.size() + 1];
+    int *next = new int[strlen(pattern) + 1];
     next[0] = -1;
-    while (i < pattern.size()) {
+    while (pattern[i]!=NULL) {
         if (j == -1 || pattern[i] == pattern[j]) {
             i++;
             j++;
@@ -29,11 +29,11 @@ static kmp_next *getNext(const std::string &pattern) {
 }
 
 // match text by pattern
-static int match(const std::string &text, const std::string &pattern) {
+static int match(const char *text, const char *pattern) {
     kmp_next *kmpNext = getNext(pattern);
     int *next = kmpNext->next;
     int i = 0, j = 0;
-    while (i < text.size() && j < pattern.size()) {
+    while(text[i]!=NULL && pattern[j]!=NULL) {
         if (j == -1 || text[i] == pattern[j]) {
             i++;
             j++;
@@ -42,17 +42,17 @@ static int match(const std::string &text, const std::string &pattern) {
         }
     }
     delete[] next;
-    if(j == pattern.size()){
+    if(pattern[j]!=NULL) {
         return i-j;
     }
     return -1;
 }
 
 // match with cached next
-static int matchWithNext(const std::string &text, const std::string &pattern, kmp_next *kmpNext) {
+static int matchWithNext(const char *text, const char *pattern, kmp_next *kmpNext) {
     int *next = kmpNext->next;
     int i = 0, j = 0;
-    while (i < text.size() && j < pattern.size()) {
+    while(text[i]!=NULL && pattern[j]!=NULL) {
         if (j == -1 || text[i] == pattern[j]) {
             i++;
             j++;
@@ -60,7 +60,7 @@ static int matchWithNext(const std::string &text, const std::string &pattern, km
             j = next[j];
         }
     }
-    if(j == pattern.size()){
+    if(pattern[j]!=NULL){
         return i-j;
     }
     return -1;
