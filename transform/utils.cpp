@@ -1,0 +1,1 @@
+// todo: add to uppercase, to lowercase use bit operations
