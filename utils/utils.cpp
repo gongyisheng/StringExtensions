@@ -1,22 +1,20 @@
-// todo: add to uppercase, to lowercase use bit operations
+// cannot improve performance because create a new string
 #include <Python.h>
 
-static char *toLowerCase(char *text) {
-    char *p = text;
-    while (*p) {
-        *p |= 32;
-        p++;
+static char *toLowerCase(const char *text) {
+    char *p = new char[strlen(text)];
+    for(int i=0;text[i]!=NULL;i++){
+        p[i] = text[i] | 32;
     }
-    return text;
+    return p;
 }
 
-static char *toUpperCase(char *text) {
-    char *p = text;
-    while (*p) {
-        *p &= -33;
-        p++;
+static char *toUpperCase(const char *text) {
+    char *p = new char[strlen(text)];
+    for(int i=0;text[i]!=NULL;i++){
+        p[i] = text[i] & -33;
     }
-    return text;
+    return p;
 }
 
 /* Destructor function for points */
@@ -35,23 +33,23 @@ static void del_Util(PyObject *obj) {
 
 /* Convert string to lower case */
 static PyObject *py_toLowerCase(PyObject *self, PyObject *args) {
-    char *text;
+    const char *text;
     
     if (!PyArg_ParseTuple(args, "s", &text)) {
         return NULL;
     }
-    char *result = toLowerCase(text);
+    const char *result = toLowerCase(text);
     return Py_BuildValue("s", result);
 }
 
 /* Convert string to upper case */
 static PyObject *py_toUpperCase(PyObject *self, PyObject *args) {
-    char *text;
+    const char *text;
     
     if (!PyArg_ParseTuple(args, "s", &text)) {
         return NULL;
     }
-    char *result = toUpperCase(text);
+    const char *result = toUpperCase(text);
     return Py_BuildValue("s", result);
 }
 
