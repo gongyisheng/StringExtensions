@@ -1,5 +1,4 @@
 #include <Python.h>
-#include <string>
 
 // #define DEBUG
 
