@@ -1,6 +1,12 @@
 #include <Python.h>
 #include <string>
 
+// #define DEBUG
+
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 struct kmp_next {
     int *next;
 };
@@ -25,6 +31,14 @@ static kmp_next *getNext(const char *pattern) {
             j = next[j];
         }
     }
+    #ifdef DEBUG
+    std::cout << "Pattern length=" << strlen(pattern) << "\n";
+    std::cout << "Next array: ";
+    for(int k=0; k<strlen(pattern)+1; k++){
+        std::cout << next[k] << ",";
+    }
+    std::cout << "\n";
+    #endif
     return createNext(next);
 }
 
@@ -33,17 +47,23 @@ static int match(const char *text, const char *pattern) {
     kmp_next *kmpNext = getNext(pattern);
     int *next = kmpNext->next;
     int i = 0, j = 0;
-    while(text[i]!=NULL && pattern[j]!=NULL) {
+    while(text[i]!=NULL && (pattern[j]!=NULL||j==-1)) {
+        #ifdef DEBUG
+        std::cout << "Before: i=" << i << ",j=" << j << ",text[i]=" << text[i] << ",pattern[j]=" << pattern[j] << "\n";
+        #endif
         if (j == -1 || text[i] == pattern[j]) {
             i++;
             j++;
         } else {
             j = next[j];
         }
+        #ifdef DEBUG
+        std::cout << "After: i=" << i << ",j=" << j << ",text[i]=" << text[i] << ",pattern[j]=" << pattern[j] << "\n";
+        #endif
     }
     delete[] next;
-    if(pattern[j]!=NULL) {
-        return i-j;
+    if(pattern[j]==NULL) {
+        return i - j;
     }
     return -1;
 }
