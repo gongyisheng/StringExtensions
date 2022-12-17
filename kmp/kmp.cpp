@@ -72,12 +72,18 @@ static int matchWithNext(const char *text, const char *pattern, kmp_next *kmpNex
     int *next = kmpNext->next;
     int i = 0, j = 0;
     while(text[i]!=NULL && pattern[j]!=NULL) {
-        if (j == -1 || text[i] == pattern[j]) {
+        #ifdef DEBUG
+        std::cout << "Before: i=" << i << ",j=" << j << ",text[i]=" << text[i] << ",pattern[j]=" << pattern[j] << "\n";
+        #endif
+        if (j == -1 || text[i] == (pattern[j]!=NULL||j==-1)) {
             i++;
             j++;
         } else {
             j = next[j];
         }
+        #ifdef DEBUG
+        std::cout << "After: i=" << i << ",j=" << j << ",text[i]=" << text[i] << ",pattern[j]=" << pattern[j] << "\n";
+        #endif
     }
     if(pattern[j]!=NULL){
         return i-j;
