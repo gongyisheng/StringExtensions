@@ -1,83 +1,102 @@
 #include <Python.h>
-#include <algorithm>
 
+#define ALPHABET_SIZE 256
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 // #define DEBUG
 
 #ifdef DEBUG
 #include <iostream>
 #endif
 
-// get badmatch array
-// static int *getBadMatch(const char *pattern) {
-//     int *badmatch = new int[128];
-//     int plen = strlen(pattern);
-//     for(int i=0; i<128; i++){
-//         badmatch[i] = -1;
-//     }
+// get good suffix table
+static void getGoodSuffix(const char *pattern, int *goodsuffix, int plen){
+    if(plen==0){
+        return;
+    }
+    if(plen==1){
+        goodsuffix[0] = 1;
+    }
 
-//     for(int i=0; pattern[i]!=NULL; i++){
-//         badmatch[(int)pattern[i]] = std::max(1, plen-i-1);
-//     }
+    for(int i=0; i<plen; i++){
+        goodsuffix[i] = 0;
+    }
 
-//     #ifdef DEBUG
-//     std::cout << "Pattern length=" << plen << "\n";
-//     std::cout << "Badmatch array: ";
-//     for(int k=0; k<128; k++){
-//         if(badmatch[k]!=-1){
-//             std::cout << (char)k << "=" << badmatch[k] << ",";
-//         }
-//     }
-//     std::cout << "\n";
-//     #endif
-//     return badmatch;
-// }
+    int i = plen-2;
+    int j = plen-1;
+    
+    while(i >= 0){
+        if(pattern[i]!=pattern[j]){
+            j = plen-1;
+        }
+        else{
+            if(goodsuffix[j]==0){
+                goodsuffix[j] = j-i;
+            }
+            j--;
+        }
+        i--;
+    }
+    #ifdef DEBUG
+    std::cout << "Good Suffix Table: ";
+    for(int k=0; k<plen; k++){
+        std::cout << goodsuffix[k] << ",";
+    }
+    std::cout << "\n";
+    #endif
+}
 
-// match text by pattern
-static int match(const char *text, const char *pattern) {
-    int badmatch[128];
-    int plen = strlen(pattern);
-    int tlen = strlen(text);
-    for(int i=0; i<128; i++){
+// get bad char table
+static void getBadChar(const char *pattern, int *badmatch, int plen){
+    for(int i=0; i<ALPHABET_SIZE; i++){
         badmatch[i] = -1;
     }
 
-    for(int i=0; pattern[i]!=NULL; i++){
-        badmatch[(int)pattern[i]] = std::max(1, plen-i-1);
+    for(int i=0; i<plen; i++){
+        badmatch[(int)pattern[i]] = i;
     }
+
     #ifdef DEBUG
-    std::cout << "Pattern length=" << plen << "\n";
-    std::cout << "Badmatch array: ";
-    for(int k=0; k<128; k++){
+    std::cout << "Bad Char Table: ";
+    for(int k=0; k<ALPHABET_SIZE; k++){
         if(badmatch[k]!=-1){
             std::cout << (char)k << "=" << badmatch[k] << ",";
         }
     }
     std::cout << "\n";
     #endif
+}
+
+// search text by pattern
+static int search(const char *text, const char *pattern) {
+    int plen = strlen(pattern);
+    int tlen = strlen(text);
+    if(plen==0 || tlen==0){
+        return -1;
+    }
+    int badmatch[ALPHABET_SIZE];
+    int goodsuffix[plen];
+
+    getBadChar(pattern, badmatch, plen);
+    getGoodSuffix(pattern, goodsuffix, plen);
 
     int i = 0, j = 0;
-    while(i<tlen){
+    while(i <= tlen-plen){
         #ifdef DEBUG
-        std::cout << "i=" << i << ", text[i]=" << text[i] << "\n";
+        std::cout << "Before: i=" << i << ", j=" << j << "\n";
         #endif
-        if(badmatch[(int)text[i]]!=-1){
-            for(j=0; j<plen; j++){
-                if(i-j<0 || text[i-j] != pattern[plen-j-1]){
-                    i += badmatch[(int)text[i]];
-                    break;
-                }
-            }
-            if(j == plen){
-                break;
-            }
+        j = plen-1;
+        while(j>=0 && text[i+j]==pattern[j]){
+            j--;
+        }
+        if(j<0){
+            return i;
         }
         else{
-            i += plen;
+            i += MAX(1,MAX(j-badmatch[(int)text[i+j]], goodsuffix[j]));
         }
-    }
-
-    if(j == plen){
-        return i-j+1;
+        #ifdef DEBUG
+        std::cout << "After: i=" << i << ", j=" << j << "\n";
+        #endif
     }
     return -1;
 }
@@ -99,20 +118,20 @@ static void del_bmBadMatch(PyObject *obj) {
 // }
 
 // match
-static PyObject *py_match(PyObject *self, PyObject *args) {
+static PyObject *py_search(PyObject *self, PyObject *args) {
     const char *text;
     const char *pattern;
     if (!PyArg_ParseTuple(args, "ss", &text, &pattern)) {
         return NULL;
     }
-    int result = match(text, pattern);
+    int result = search(text, pattern);
     return Py_BuildValue("i", result);
 }
 
 
 /* Module method table */
 static PyMethodDef bmMethods[] = {
-    {"match", py_match, METH_VARARGS, "Match text with pattern"},
+    {"search", py_search, METH_VARARGS, "Search text with pattern"},
     {NULL, NULL, 0, NULL}
 };
 
