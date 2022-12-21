@@ -1,10 +1,12 @@
 // cannot improve performance because create a new string
+#define LOWER_MASK 0x20
+#define UPPER_MASK ~0x20
 #include <Python.h>
 
 static char *toLowerCase(const char *text) {
     char *p = new char[strlen(text)];
     for(int i=0;text[i]!=NULL;i++){
-        p[i] = text[i] | 32;
+        p[i] = text[i] | LOWER_MASK;
     }
     return p;
 }
@@ -12,7 +14,7 @@ static char *toLowerCase(const char *text) {
 static char *toUpperCase(const char *text) {
     char *p = new char[strlen(text)];
     for(int i=0;text[i]!=NULL;i++){
-        p[i] = text[i] & -33;
+        p[i] = text[i] & UPPER_MASK;
     }
     return p;
 }
