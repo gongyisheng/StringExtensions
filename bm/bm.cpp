@@ -8,97 +8,72 @@
 #include <iostream>
 #endif
 
-// get good suffix table
-static void getGoodSuffix(const char *pattern, int *goodsuffix, int plen){
-    if(plen==0){
-        return;
-    }
-    if(plen==1){
-        goodsuffix[0] = 1;
-    }
-
-    for(int i=0; i<plen; i++){
-        goodsuffix[i] = 0;
-    }
-
-    int i = plen-2;
-    int j = plen-1;
-    
-    while(i >= 0){
-        if(pattern[i]!=pattern[j]){
-            j = plen-1;
-        }
-        else{
-            if(goodsuffix[j]==0){
-                goodsuffix[j] = j-i;
-            }
-            j--;
-        }
-        i--;
-    }
-    #ifdef DEBUG
-    std::cout << "Good Suffix Table: ";
-    for(int k=0; k<plen; k++){
-        std::cout << goodsuffix[k] << ",";
-    }
-    std::cout << "\n";
-    #endif
+static void preBmBc(const char *x, int m, int bmBc[]) {
+   int i;
+ 
+   for (i = 0; i < ALPHABET_SIZE; ++i)
+      bmBc[i] = m;
+   for (i = 0; i < m - 1; ++i)
+      bmBc[x[i]] = m - i - 1;
 }
-
-// get bad char table
-static void getBadChar(const char *pattern, int *badmatch, int plen){
-    for(int i=0; i<ALPHABET_SIZE; i++){
-        badmatch[i] = -1;
-    }
-
-    for(int i=0; i<plen; i++){
-        badmatch[(int)pattern[i]] = i;
-    }
-
-    #ifdef DEBUG
-    std::cout << "Bad Char Table: ";
-    for(int k=0; k<ALPHABET_SIZE; k++){
-        if(badmatch[k]!=-1){
-            std::cout << (char)k << "=" << badmatch[k] << ",";
-        }
-    }
-    std::cout << "\n";
-    #endif
+ 
+ 
+static void suffixes(const char *x, int m, int *suff) {
+   int f, g, i;
+ 
+   suff[m - 1] = m;
+   g = m - 1;
+   for (i = m - 2; i >= 0; --i) {
+      if (i > g && suff[i + m - 1 - f] < i - g)
+         suff[i] = suff[i + m - 1 - f];
+      else {
+         if (i < g)
+            g = i;
+         f = i;
+         while (g >= 0 && x[g] == x[g + m - 1 - f])
+            --g;
+         suff[i] = f - g;
+      }
+   }
 }
-
-// search text by pattern
-static int search(const char *text, const char *pattern) {
-    int plen = strlen(pattern);
-    int tlen = strlen(text);
-    if(plen==0 || tlen==0){
-        return -1;
-    }
-    int badmatch[ALPHABET_SIZE];
-    int goodsuffix[plen];
-
-    getBadChar(pattern, badmatch, plen);
-    getGoodSuffix(pattern, goodsuffix, plen);
-
-    int i = 0, j = 0;
-    while(i <= tlen-plen){
-        #ifdef DEBUG
-        std::cout << "Before: i=" << i << ", j=" << j << "\n";
-        #endif
-        j = plen-1;
-        while(j>=0 && text[i+j]==pattern[j]){
-            j--;
-        }
-        if(j<0){
-            return i;
-        }
-        else{
-            i += MAX(1,MAX(j-badmatch[(int)text[i+j]], goodsuffix[j]));
-        }
-        #ifdef DEBUG
-        std::cout << "After: i=" << i << ", j=" << j << "\n";
-        #endif
-    }
-    return -1;
+ 
+static void preBmGs(const char *x, int m, int bmGs[]) {
+   int i, j, suff[m];
+ 
+   suffixes(x, m, suff);
+ 
+   for (i = 0; i < m; ++i)
+      bmGs[i] = m;
+   j = 0;
+   for (i = m - 1; i >= 0; --i)
+      if (suff[i] == i + 1)
+         for (; j < m - 1 - i; ++j)
+            if (bmGs[j] == m)
+               bmGs[j] = m - 1 - i;
+   for (i = 0; i <= m - 2; ++i)
+      bmGs[m - 1 - suff[i]] = m - 1 - i;
+}
+ 
+ 
+static int search(const char *x, int m, const char *y, int n) {
+   int i, j, bmGs[m], bmBc[ALPHABET_SIZE];
+ 
+   /* Preprocessing */
+   preBmGs(x, m, bmGs);
+   preBmBc(x, m, bmBc);
+ 
+   /* Searching */
+   j = 0;
+   while (j <= n - m) {
+      for (i = m - 1; i >= 0 && x[i] == y[i + j]; --i);
+      if (i < 0) {
+         return j;
+         j += bmGs[0];
+      }
+      else
+         j += MAX(bmGs[i], bmBc[y[i + j]] - m + 1 + i);
+   }
+   return -1;
 }
 
 
@@ -124,7 +99,7 @@ static PyObject *py_search(PyObject *self, PyObject *args) {
     if (!PyArg_ParseTuple(args, "ss", &text, &pattern)) {
         return NULL;
     }
-    int result = search(text, pattern);
+    int result = search(pattern, strlen(pattern), text, strlen(text));
     return Py_BuildValue("i", result);
 }
 
